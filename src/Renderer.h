@@ -19,6 +19,7 @@ class Renderer
     void SpawnParticles();
     Color GetHeatmapColor(float speed, float maxSpeed);
     Color GetTimeBasedColor(float speed, float maxSpeed);
+    void RenderParticles(const std::vector<Particle> &particles);
 
   private:
     int windowWidth = 1200;

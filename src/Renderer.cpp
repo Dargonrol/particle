@@ -1,5 +1,11 @@
 #include "Renderer.h"
-#include "../include/raygui.h"
+
+#ifndef RAYGUI_STATIC
+#define RAYGUI_STATIC
+#endif
+
+#include "raygui.h"
+
 #include "Particle.h"
 #include <cmath>
 #include <glm/common.hpp>
@@ -8,6 +14,7 @@
 #include <glm/glm.hpp>
 #include <glm/trigonometric.hpp>
 #include <raylib.h>
+#include <rlgl.h>
 
 Renderer::Renderer(int width, int heigth) : windowWidth(width), windowHeight(heigth)
 {
@@ -137,19 +144,24 @@ void Renderer::RenderUI()
     DrawText(TextFormat("FPS: %d (%.2f ms)", GetFPS(), GetFrameTime()), paddingX, windowHeight - 25, 20, GREEN);
 }
 
+void Renderer::RenderParticles(const std::vector<Particle> &particles)
+{
+    for (const auto &item : particles)
+    {
+        Vector2 pos = {item.pos.x, item.pos.y};
+        Vector2 size = {particleSize, particleSize};
+
+        DrawRectangleV(pos, size, item.col);
+    }
+}
+
 void Renderer::RenderViewport()
 {
     BeginTextureMode(viewportTarget);
     {
         ClearBackground(BLACK);
         DrawGrid(10, 50.0f);
-
-        for (const auto &item : particles)
-        {
-            // DrawCircle(item.pos.x, item.pos.y, particleSize, Color(item.col.r, item.col.g, item.col.b, item.col.a));
-            DrawPixel(item.pos.x, item.pos.y, Color(item.col.r, item.col.g, item.col.b, item.col.a));
-        }
-
+        RenderParticles(particles);
         DrawCircleLines(mousePos.x, mousePos.y, gravitationalRadius, WHITE);
     }
     EndTextureMode();
@@ -178,8 +190,9 @@ void Renderer::Update(const float deltaTime)
     }
 
     const float radiusSquared = gravitationalRadius * gravitationalRadius;
+    float waveFreq = 0.08f;
+    float timePulse = GetTime() * 4.0f;
 
-#pragma omp parallel for
     for (int i = 0; i < count; ++i)
     {
         Particle &particle = particles[i];
@@ -200,8 +213,6 @@ void Renderer::Update(const float deltaTime)
                 direction /= distance;
                 glm::vec2 rotationDir = glm::vec2{-direction.y, direction.x};
 
-                float waveFreq = 0.08f;
-                float timePulse = GetTime() * 4.0f;
                 float wave = std::sin(distance * waveFreq - timePulse);
 
                 float baseForce = (gravitationalPull * forceMultiplier) / (distance * 0.05f + 1.0f);
@@ -236,7 +247,8 @@ void Renderer::SpawnParticles()
     {
         particles.push_back(Particle{
             .pos = {GetRandomValue(0, viewportWidth * 100) / 100.0f, GetRandomValue(0, viewportHeigth * 100) / 100.0f},
-            .vel = {0, 0}});
+            .vel = {0, 0},
+            .col = {255, 0, 0, 255}});
     }
 }
 
