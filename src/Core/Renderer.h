@@ -1,20 +1,25 @@
 #pragma once
 
-#include "Particle.h"
+#include "../Simulation/Particle.h"
 #include <raylib.h>
 #include <vector>
+
+class App;
 
 class Renderer
 {
   public:
-    explicit Renderer(int width, int heigth);
+    explicit Renderer(App &app);
     ~Renderer();
 
-    void Render();
+    void Init();
+    void Render(float a, float b);
     void Update(const float deltaTime);
 
+    void ResizeEvent();
+
   private:
-    void RenderUI();
+    void RenderUI(float a, float b);
     void RenderViewport();
     void SpawnParticles();
     Color GetHeatmapColor(float speed, float maxSpeed);
@@ -22,12 +27,10 @@ class Renderer
     void RenderParticles(const std::vector<Particle> &particles);
 
   private:
-    int windowWidth = 1200;
-    int windowHeight = 720;
-
-    const float uiWidth = 300.0f;
-    const int viewportWidth = windowWidth - static_cast<int>(uiWidth);
-    const int viewportHeigth = windowHeight;
+    App &application;
+    float uiWidth = 300.0f;
+    int viewportWidth;
+    int viewportHeigth;
 
     RenderTexture2D viewportTarget;
 

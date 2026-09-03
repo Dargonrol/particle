@@ -1,12 +1,8 @@
 #include "Renderer.h"
+#include "Application.h"
 
-#ifndef RAYGUI_STATIC
-#define RAYGUI_STATIC
-#endif
+#include <raygui.h>
 
-#include "raygui.h"
-
-#include "Particle.h"
 #include <cmath>
 #include <glm/common.hpp>
 #include <glm/ext/vector_float2.hpp>
@@ -16,24 +12,37 @@
 #include <raylib.h>
 #include <rlgl.h>
 
-Renderer::Renderer(int width, int heigth) : windowWidth(width), windowHeight(heigth)
-{
-    InitWindow(windowWidth, windowHeight, "Raylib - UI & Viewport Split");
-    SetTargetFPS(144);
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-
-    viewportTarget = LoadRenderTexture(viewportWidth, viewportHeigth);
-
-    SpawnParticles();
-}
+Renderer::Renderer(App &app) : application(app) {}
 
 Renderer::~Renderer()
 {
     UnloadRenderTexture(viewportTarget);
-    CloseWindow();
 }
 
-void Renderer::Render()
+void Renderer::Init()
+{
+    viewportWidth = application.GetWindowWidth() - static_cast<int>(uiWidth);
+    viewportHeigth = application.GetWindowHeight();
+
+    viewportTarget = LoadRenderTexture(viewportWidth, viewportHeigth);
+
+    GuiSetStyle(DEFAULT, TEXT_SIZE, 15);
+    GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt(RAYWHITE));
+
+    GuiSetStyle(SLIDER, BASE_COLOR_NORMAL, ColorToInt(GetColor(0x333333FF)));
+
+    SpawnParticles();
+}
+
+void Renderer::ResizeEvent()
+{
+    viewportWidth = application.GetWindowWidth() - static_cast<int>(uiWidth);
+    viewportHeigth = application.GetWindowHeight();
+    UnloadRenderTexture(viewportTarget);
+    viewportTarget = LoadRenderTexture(viewportWidth, viewportHeigth);
+}
+
+void Renderer::Render(float a, float b)
 {
     RenderViewport();
 
@@ -48,23 +57,18 @@ void Renderer::Render()
 
         DrawTexturePro(viewportTarget.texture, sourceRec, destRec, origin, 0.0f, WHITE);
 
-        RenderUI();
+        RenderUI(a, b);
     }
     EndDrawing();
 }
 
-void Renderer::RenderUI()
+void Renderer::RenderUI(float a, float b)
 {
-    GuiSetStyle(DEFAULT, TEXT_SIZE, 15);
-    GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt(RAYWHITE));
-
-    GuiSetStyle(SLIDER, BASE_COLOR_NORMAL, ColorToInt(GetColor(0x333333FF)));
-
     // background
-    DrawRectangle(0, 0, (int)uiWidth, windowHeight, GetColor(0x202020FF));
+    DrawRectangle(0, 0, (int)uiWidth, application.GetWindowHeight(), GetColor(0x202020FF));
 
     // seperation line
-    DrawLine((int)uiWidth, 0, (int)uiWidth, windowHeight, GRAY);
+    DrawLine((int)uiWidth, 0, (int)uiWidth, application.GetWindowHeight(), GRAY);
 
     // ui elements
     GuiGroupBox({10, 10, uiWidth - 20, 200}, "CONTROLS");
@@ -141,7 +145,9 @@ void Renderer::RenderUI()
         10000.0f);
     currentY += sliderHeigth;
 
-    DrawText(TextFormat("FPS: %d (%.2f ms)", GetFPS(), GetFrameTime()), paddingX, windowHeight - 25, 20, GREEN);
+    DrawText(TextFormat("FPS: %d (%.2f ms)", GetFPS(), GetFrameTime()), paddingX, application.GetWindowHeight() - 25, 20, GREEN);
+    DrawText(TextFormat("RenderLoopTime: %.2f ms", a), 20, 1000 - 65, 20, GREEN);
+    DrawText(TextFormat("UpdateLoopTime: %.2f ms", b), 20, 1000 - 50, 20, GREEN);
 }
 
 void Renderer::RenderParticles(const std::vector<Particle> &particles)
@@ -160,7 +166,6 @@ void Renderer::RenderViewport()
     BeginTextureMode(viewportTarget);
     {
         ClearBackground(BLACK);
-        DrawGrid(10, 50.0f);
         RenderParticles(particles);
         DrawCircleLines(mousePos.x, mousePos.y, gravitationalRadius, WHITE);
     }
