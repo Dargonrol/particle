@@ -5,6 +5,18 @@ set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+include(FetchContent)
+
+FetchContent_Declare(
+    EnTT
+    GIT_REPOSITORY https://github.com/skypjack/entt
+    GIT_TAG v4.0.0
+)
+
+set(ENTT_INSTALL OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(EnTT)
+
 find_package(raylib REQUIRED)
 
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS
@@ -25,6 +37,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     raylib 
     glm 
+    EnTT::EnTT
 )
 
 if(WIN32)
